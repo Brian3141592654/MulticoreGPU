@@ -1,209 +1,111 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cuda.h>
-#include <time.h>
-#include <cuda_runtime.h>
-#include <math.h>
-#define SIZE  320 
+#include<stdio.h>
+#include<stdlib.h>
+#include<time.h>
+#include<unistd.h>
+#include<sys/time.h>
+#include <omp.h>
+#define SIZE 320
 
-#define B 256;
-#define TH  256;
-#define TOTAL 256*256
+// Kernel definitions for Sobel and Gaussian filtering
+int kernel1[9] = { 1,0,-1,2,0,-2,3,0,-3 }; // Sobel kernel
+int kernel2[25] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1}; // Gaussian kernel
 
-//int bl = 256;
-//int thh = 32;
+// Global variables for storing results and matrix data
+unsigned char * s_result;
+unsigned char * g_result;
+int* matrix; 
 
+// Function prototype for convolution operation
+void CNN_CPU(unsigned char *m2, int kernel[], int size_, int num, int kernel_size, int threads_num);
 
-__global__ void CNN_GPU(int m1[], unsigned char m2[], int kernel[], int size_, int num, int big);
-void CNN_CPU(int* m1, unsigned char *m2, int kernel[], int size_, int num, int big);
-
-
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
+    struct timeval start, end;
+    FILE* bin;
+    bin = fopen("320.bin", "rb"); // Open binary file
+    unsigned char c;
+    double total_time_s = 0, total_time_g = 0;
+    
+    // Allocate memory for results and matrix
+    s_result = (unsigned char*)malloc(sizeof(int) * (SIZE-2) * (SIZE-2));
+    g_result = (unsigned char*)malloc(sizeof(int) * (SIZE-4) * (SIZE-4));
+    matrix = (int*)malloc(sizeof(int) * SIZE * SIZE);
 
-	
-	int kernel1[9] = { 1,0,-1,2,0,-2,3,0,-3 };
-	int kernel2[25] = {1,4,6,4,1,4,16,24,16,4,6,24,36,24,6,4,16,24,16,4,1,4,6,4,1};	
-	clock_t  start , end , S_t , G_t ;
-	FILE* bin;
-	bin = fopen("/home/a1075501/convolution/1280.bin", "rb");
-	unsigned char c;
-	
-	
-	int* matrix; 
-	matrix = (int*)malloc(sizeof(int) * SIZE*SIZE);
-	unsigned char * s_result = (unsigned char*)malloc(sizeof(int) * (SIZE-2) * (SIZE-2));
-	unsigned char * g_result = (unsigned char*)malloc(sizeof(int) * (SIZE-4) * (SIZE-4));
-	
-	
-	if (bin)
-	{
-		int i = 0;
-		while ((c = fgetc(bin)) != EOF)
-		{
-			matrix[i++] = int(c);
-			if (i == SIZE * SIZE)
-				break;
-		}
-		
-	}
-	
-	fclose(bin);
-	
-	
-	start = clock();
-	CNN_CPU(matrix, s_result, kernel1, SIZE, 1, 3);
-	end = clock();
-	S_t = end -start;
-	printf("CPU_sobel: %lf s \n", (double) S_t / CLOCKS_PER_SEC  );
-	free(s_result);
-	
-	
-	
-	start = clock();
-	CNN_CPU(matrix, g_result, kernel2, SIZE-2, 256, 5);	
-	end = clock();
-	G_t = end -start;
-	printf("CPU_gaussian: %lf s \n", (double) G_t / CLOCKS_PER_SEC  );
-	free(g_result);
-
-	cudaEvent_t c_start,c_stop;
-    	cudaEventCreate(&c_start);
-    	cudaEventCreate(&c_stop);
-
-
-	int *matrix_g;
-	unsigned char *G_s_result, *G_g_result;
-	int *kernel1_G, *kernel2_G;
-	float GTime,STime = 0;
-
-
-	cudaMalloc((void**)&matrix_g, sizeof(int) *SIZE*SIZE);
-	cudaMalloc((void**)&G_s_result, sizeof(int) *(SIZE-2)*(SIZE-2));
-	cudaMalloc((void**)&G_g_result, sizeof(int) *(SIZE-4)*(SIZE-4));
-	cudaMalloc((void**)&kernel1_G, sizeof(int) *9);
-	cudaMalloc((void**)&kernel2_G, sizeof(int) *25);
-
-	s_result = (unsigned char*)malloc(sizeof(int) * (SIZE-2) * (SIZE-2));
-	g_result = (unsigned char*)malloc(sizeof(int) * (SIZE-4) * (SIZE-4));
-	
-
-	cudaMemcpy(matrix_g, matrix, sizeof(int)*SIZE*SIZE, cudaMemcpyHostToDevice);
-	cudaMemcpy(kernel1_G, kernel1, sizeof(int)*9, cudaMemcpyHostToDevice);
-	cudaMemcpy(kernel2_G, kernel2, sizeof(int)*25, cudaMemcpyHostToDevice);
-
-
-	cudaEventRecord(c_start,0);
-
-	CNN_GPU<<<256, 256>>>(matrix_g, G_s_result, kernel1_G, SIZE, 1, 9);
-	cudaEventRecord(c_stop,0);
-	cudaEventSynchronize(c_stop);
-	cudaEventElapsedTime(&STime, c_start, c_stop);
-	cudaMemcpy(s_result, G_s_result, sizeof(int)*(SIZE-2)*(SIZE-2), cudaMemcpyDeviceToHost);
-	printf("GPU_sobel: %lf s \n", (double) STime/1000);
-	free(s_result);
-	cudaFree(kernel1_G);
-	cudaFree(G_s_result);
-
-	cudaEventRecord(c_start,0);
-	CNN_GPU<<<256, 256>>>(matrix_g, G_g_result, kernel2_G, SIZE-2, 256, 25);
-	cudaEventRecord(c_stop,0);
-	cudaEventSynchronize(c_stop);
-	cudaEventElapsedTime(&GTime, c_start, c_stop);
-	cudaMemcpy(g_result, G_g_result, sizeof(int)*(SIZE-2)*(SIZE-2), cudaMemcpyDeviceToHost);
-	printf("GPU_gaussian %lf s \n",  (double)GTime/1000);
-	
-	free(g_result);
-	cudaFree(G_g_result);
-	cudaFree(kernel2_G);
-	
-	cudaFree(matrix_g);
-
-
-
-
-	free(matrix);
-	//free(g_result);
-	//fclose(bin);
-
-	
-	return 0;
-
-}
-
-
-//               image             result  kernel num     
-void CNN_CPU(int *m1, unsigned char *m2, int kernel[], int size_, int num, int big)
-{
-	for (int i = 0; i < size_ - 2; i++)
- 	{
-  		for (int j = 0; j < size_ - 2; j++)
-  		{
-	   		int t = 0;
-	
-	   		for (int k = 0; k < big*big; k++)
-	   		{
-	    			t = t + kernel[k] * m1[(k / big + i)*SIZE + k % big+j];
-	   		}
-			t/=num;
-			if (t < 0)
-			{
-				t = 0;
-			}
-		    	else if (t > 255)
-			{
-				t = 255;
-			}
-			m2[i * (size_ - 2) + j] = (unsigned char)t;
-	  	}
- 	}
-} 
-
-
-__global__ void CNN_GPU(int m1[], unsigned char m2[], int kernel[], int size_, int num, int big)
-{
-
-
-	int bias;
-	int temp_B;
-	if (big == 9 )
-{
-		bias = size_  ;
-
-		temp_B = 3 ;
-}
-	else if (big == 25)
-{
-		bias = size_ - 2 ;
-		temp_B = 5;
-}
-	//printf("%d \n", bias);
-    	int bb = bias*bias;
-
-	int j = blockDim.x * blockIdx.x + threadIdx.x;
-    for(int i=0;i<bb;i+=TOTAL)
+    // Read file into matrix
+    if (bin)
     {
-	    if(i+threadIdx.x+blockDim.x * blockIdx.x < bb)
-	    {
-	    	int t = 0;
+        int i = 0;
+        while ((c = fgetc(bin)) != EOF)
+        {
+            matrix[i++] = (int)c;
+            if (i == SIZE * SIZE)
+                break;
+        }
+    }
+    fclose(bin);
+    
+    // Sobel filtering with varying thread counts
+    for (int threads_num = 1; threads_num < 9; threads_num++)
+    {
+        gettimeofday(&start, NULL);
+        CNN_CPU(s_result, kernel1, SIZE, 1, 3, threads_num);
+        gettimeofday(&end, NULL);
+        total_time_s = (double)(1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) / 1000000;
+        printf("Number of Thread(s) : %d  ==> Time used : %lf s \n", threads_num, total_time_s);
+    }
+    
+    // Write Sobel result to file
+    FILE* write_ptr1 = fopen("output_s.bin", "wb");
+    fwrite(s_result, sizeof(unsigned char), (SIZE-2)*(SIZE-2), write_ptr1);
+    fclose(write_ptr1);
+    
+    // Gaussian filtering with varying thread counts
+    for (int threads_num = 1; threads_num < 9; threads_num++)
+    {
+        gettimeofday(&start, NULL);
+        CNN_CPU(g_result, kernel2, SIZE-2, 256, 5, threads_num);
+        gettimeofday(&end, NULL);
+        total_time_g = (double)(1000000*(end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec)) / 1000000;
+        printf("Number of Thread(g) : %d  ==> Time used : %lf s \n", threads_num, total_time_g);
+    }
+    
+    // Write Gaussian result to file
+    FILE* write_ptr2 = fopen("output_g.bin", "wb");
+    fwrite(g_result, sizeof(unsigned char), (SIZE-4)*(SIZE-4), write_ptr2);
+    fclose(write_ptr2);
+    
+    // Free allocated memory
+    free(s_result);
+    free(g_result);
+    free(matrix);
+    
+    return 0;
+}
 
-			for (int k = 0; k < big; k++)
-			{
-
-				t = (t + kernel[k] * m1[(k /temp_B + (i+j)/ bias) * size_ + k % temp_B + (i+j) % bias]);
-				
-			}
-		    	t = t / num;
-			if (t < 0)
-			{
-				t = 0;
-			}
-			else if (t > 255)
-			{
-				t = 255;
-			}
-
-			m2[(i+j)/ bias * bias + (i+j) % bias] = (unsigned char)t;
-	    }
+// Convolution function applying the given kernel to the input matrix
+void CNN_CPU(unsigned char *m2, int kernel[], int size_, int num, int kernel_size, int threadNum)
+{
+    int t, i, k;
+    int bias = size_ - 2;
+    
+    // Parallelize loop using OpenMP
+    #pragma omp parallel for num_threads(threadNum) shared(m2, kernel, size_, num, kernel_size) private(i, t, k)
+    for (i = 0; i < bias * bias; i++)
+    {
+        t = 0;
+        
+        // Apply kernel to the matrix
+        for (k = 0; k < kernel_size * kernel_size; k++)
+        {
+            t += kernel[k] * matrix[(k/kernel_size + i/bias) * SIZE + k%kernel_size + i%bias];
+        }
+        
+        t /= num; // Normalize value
+        
+        // Ensure values are within valid range (0-255)
+        if (t < 0) t = 0;
+        else if (t > 255) t = 255;
+        
+        m2[i / bias * bias + i % bias] = (unsigned char)t;
     }
 }
