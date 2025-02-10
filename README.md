@@ -14,18 +14,18 @@ With rapid advancements in **electronic technology**, computing power has signif
 ### 🔍 **Why CNN?**  
 CNN is a widely used AI architecture, where **convolution operations form its core**. The convolution computation follows the formula shown in **Figure 1**, which serves as the basis for **evaluating processing efficiency** and **multi-threaded performance enhancements**.  
 
-![Convolution computation.](image/F1.png)
+![Convolution computation.](image/F1.jpeg)
 
 ### 🎨 **Filters Used**  
 Different filters serve different image processing needs. In this study, we apply:  
 
-![Filters: (a)Sobel (b)Gaussian](image/F2.png)
+![Filters: (a)Sobel (b)Gaussian](image/F2.jpeg)
 
 ✅ **Sobel Filter** → Detects **edges** (Figure 3)  
 ✅ **Gaussian Filter** → Performs **blurring** (Figure 4)  
 
-![The results of different images processed through the Sobel filter.](image/F3.png)
-![The results of different images processed through the Gaussian filter](image/F4.png)
+![The results of different images processed through the Sobel filter.](image/F3.jpeg)
+![The results of different images processed through the Gaussian filter](image/F4.jpeg)
 
 Since convolution requires **extensive matrix computations**, substantial computational power is needed. **Multi-threading** allows multiple tasks to be executed in parallel, significantly increasing speed. More **threads** → **less execution time** → **higher speedup** 🚀.  
 
@@ -36,7 +36,7 @@ The first implementation uses **Pthread**. It employs:
 🔹 `pthread_create` → To create multiple threads  
 🔹 `pthread_join` → To merge the execution results  
 
-![The structure of Pthread code.](image/F5.png)
+![The structure of Pthread code.](image/F5.jpeg)
 
 ### ⚠️ **Challenges Faced**  
 Initially, we assumed that simply adding these functions would enable multi-threaded execution. However, **incorrect results** appeared. Further debugging revealed issues with:  
@@ -49,7 +49,7 @@ After fixing these, **Pthread implementation ran correctly** 🎉.
 ### 📊 **Performance Evaluation**  
 The program processed images of **various resolutions (320, 1280, 2880, 6000, 11400)** using **Sobel and Gaussian filters**. **Speedup (efficiency gain)** was calculated as the ratio of **single-threaded to multi-threaded execution time** (**Table 1**).  
 
-![The speed up using Pthread.](image/B1.png)
+![The speed up using Pthread.](image/B1.jpeg)
 
 🔹 **More threads generally improve performance** but not always **linearly** 📈  
 🔹 **Gaussian filtering** achieves **higher speedup** than **Sobel filtering**  
@@ -85,7 +85,7 @@ Unlike **Pthread and OpenMP**, CUDA requires:
 
 A portion of the **core CUDA implementation** is shown in **Figure 8**.  
 
-![The core CUDA implementation](image/F8.png)
+![The core CUDA implementation](image/F8.jpeg)
 
 ### 📊 **Speedup Results**  
 We tested CUDA using thread counts: **128, 256, 512, and 1024** and compared execution time between **CPU and GPU**. **Table 3** summarizes the results:  
@@ -95,7 +95,7 @@ We tested CUDA using thread counts: **128, 256, 512, and 1024** and compared exe
 
 🔹 **Figure 9** shows a clear **trend of increasing performance** as **thread count increases** 📈🚀.  
 
-![](image/F9.png)
+![](image/F9.jpeg)
 
 ## 🎯 Conclusion  
 
