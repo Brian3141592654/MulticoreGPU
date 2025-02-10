@@ -96,9 +96,9 @@ We tested CUDA using thread counts: **128, 256, 512, and 1024** and compared exe
 🔥 **Sobel Filtering** → Speedup **150× to 504×**  
 🔥 **Gaussian Filtering** → Speedup **198× to 917×**  
 
+![](image/F9.jpeg)
 🔹 **Figure 9** shows a clear **trend of increasing performance** as **thread count increases** 📈🚀.  
 
-![](image/F9.jpeg)
 
 ## 🎯 Conclusion  
 
