@@ -22,9 +22,8 @@ Different filters serve different image processing needs. In this study, we appl
 ![Filters: (a)Sobel (b)Gaussian](image/F2.jpeg)
 
 ✅ **Sobel Filter** → Detects **edges** (Figure 3)  
-✅ **Gaussian Filter** → Performs **blurring** (Figure 4)  
-
 ![The results of different images processed through the Sobel filter.](image/F3.jpeg)
+✅ **Gaussian Filter** → Performs **blurring** (Figure 4)  
 ![The results of different images processed through the Gaussian filter](image/F4.jpeg)
 
 Since convolution requires **extensive matrix computations**, substantial computational power is needed. **Multi-threading** allows multiple tasks to be executed in parallel, significantly increasing speed. More **threads** → **less execution time** → **higher speedup** 🚀.  
@@ -65,9 +64,11 @@ Next, we switch to **OpenMP**, which is **simpler** and **automatically handles 
 🔹 **Ideal for parallel processing**  
 
 A snippet of **core OpenMP implementation** is shown in **Figure 6**.  
+![The core OpenMP implementation](image/F6.jpeg)
 
 ### 📊 **Performance Results**  
 The same experiment was conducted using **OpenMP**, and **Table 2** summarizes **speedup results across different thread counts**. Overall, OpenMP achieved **excellent performance gains** 🎯.  
+![The speed up using OpenMP](image/B2.jpeg)
 
 ## ⚡ 4. CUDA and Google Colab Implementation  
 
@@ -76,6 +77,7 @@ To further analyze performance gains, **CUDA implementation** was executed on **
 ### 🔥 **GPU Used: NVIDIA T4** (Figure 7)  
 ✅ **2560 CUDA cores** → Much more powerful than Jetson Nano  
 ✅ **Large-scale thread parallelism**  
+![GPU Used: NVIDIA T4](image/F7.jpeg)
 
 ### ⚠️ **Challenges with CUDA**  
 Unlike **Pthread and OpenMP**, CUDA requires:  
@@ -89,6 +91,7 @@ A portion of the **core CUDA implementation** is shown in **Figure 8**.
 
 ### 📊 **Speedup Results**  
 We tested CUDA using thread counts: **128, 256, 512, and 1024** and compared execution time between **CPU and GPU**. **Table 3** summarizes the results:  
+![Speedup Results.](image/B3.jpeg)
 
 🔥 **Sobel Filtering** → Speedup **150× to 504×**  
 🔥 **Gaussian Filtering** → Speedup **198× to 917×**  
